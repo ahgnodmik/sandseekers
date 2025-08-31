@@ -85,6 +85,9 @@
         .guest-mode:hover {
             background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
         }
+        #gameCanvas {
+            cursor: crosshair;
+        }
     </style>
 </head>
 <body class="min-h-screen text-white">
@@ -146,7 +149,7 @@
     </div>
 
     <!-- 게임 화면 -->
-    <div id="gameScreen" class="hidden fixed inset-0">
+    <div id="gameScreen" class="fixed inset-0">
         <!-- 상단 UI -->
         <div class="absolute top-0 left-0 right-0 z-40 bg-black/30 backdrop-blur-sm p-4">
             <div class="flex justify-between items-center max-w-6xl mx-auto">
@@ -234,21 +237,15 @@
                     loadingScreen.classList.add('hidden');
                 }
                 
-                // 로그인 화면 표시
-                const loginScreen = document.getElementById('loginScreen');
-                if (loginScreen) {
-                    loginScreen.classList.remove('hidden');
-                }
+                // 게임을 즉시 시작 (게스트 모드)
+                console.log('페이지 로드 완료, 게임 즉시 시작');
                 
             } catch (error) {
                 console.error('초기화 오류:', error);
                 
-                // 오류가 발생해도 로딩 화면은 숨기고 로그인 화면 표시
+                // 오류가 발생해도 로딩 화면은 숨기기
                 const loadingScreen = document.getElementById('loadingScreen');
-                const loginScreen = document.getElementById('loginScreen');
-                
                 if (loadingScreen) loadingScreen.classList.add('hidden');
-                if (loginScreen) loginScreen.classList.remove('hidden');
             }
         });
     </script>

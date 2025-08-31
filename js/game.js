@@ -1,3 +1,5 @@
+
+
 // 게임 상태 관리
 class GameState {
     constructor() {
@@ -523,6 +525,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     console.log('All event listeners set up');
+    
+    // 페이지 로드 시 자동으로 게임 시작 (게스트 모드)
+    setTimeout(() => {
+        console.log('Auto-starting game in guest mode');
+        startGame(null, true);
+    }, 1000);
 });
 
 // 게임 루프
