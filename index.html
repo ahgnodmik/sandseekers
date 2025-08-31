@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sandseekers - 나만의 행성 만들기</title>
+    <meta name="description" content="우주를 탐험하며 나만의 행성을 만들어보는 웹 기반 캐주얼 게임">
+    <meta name="keywords" content="게임, 우주, 행성, 캐주얼, 웹게임">
+    <meta name="author" content="Sandseekers">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Sandseekers - 나만의 행성 만들기">
+    <meta property="og:description" content="우주를 탐험하며 나만의 행성을 만들어보는 웹 기반 캐주얼 게임">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://sandseekers.netlify.app">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PF8CX0WT7C"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-PF8CX0WT7C');
+    </script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        .planet-glow {
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.3);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .error-message {
+            background: rgba(239, 68, 68, 0.9);
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            color: white;
+        }
+        .guest-mode {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .guest-mode:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <!-- 배경 별들 -->
+    <div id="stars"></div>
+    
+    <!-- 로딩 화면 -->
+    <div id="loadingScreen" class="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+        <div class="text-center">
+            <div class="loading mx-auto mb-4"></div>
+            <p class="text-lg">게임을 로딩 중입니다...</p>
+        </div>
+    </div>
+    
+    <!-- 로그인 화면 -->
+    <div id="loginScreen" class="hidden fixed inset-0 flex items-center justify-center z-50">
+        <div class="bg-black/50 backdrop-blur-sm rounded-2xl p-8 text-center max-w-md w-full mx-4">
+            <h1 class="text-4xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                Sandseekers
+            </h1>
+            <p class="text-gray-300 mb-8">우주를 탐험하며 나만의 행성을 만들어보세요!</p>
+            
+            <!-- 오류 메시지 표시 영역 -->
+            <div id="errorMessage" class="hidden error-message"></div>
+            
+            <!-- 로그인 버튼들 -->
+            <div class="space-y-4">
+                <button id="googleLoginBtn" class="w-full bg-white text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Google로 시작하기
+                </button>
+                
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-600"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-black/50 text-gray-400">또는</span>
+                    </div>
+                </div>
+                
+                <button id="guestLoginBtn" class="w-full guest-mode text-white px-6 py-3 rounded-lg font-semibold transition-all flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"></path>
+                    </svg>
+                    게스트 모드로 시작
+                </button>
+            </div>
+            
+            <p class="text-sm text-gray-400 mt-6">
+                게스트 모드에서는 로컬에만 데이터가 저장됩니다
+            </p>
+        </div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="gameScreen" class="hidden fixed inset-0">
+        <!-- 상단 UI -->
+        <div class="absolute top-0 left-0 right-0 z-40 bg-black/30 backdrop-blur-sm p-4">
+            <div class="flex justify-between items-center max-w-6xl mx-auto">
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 bg-gray-600 rounded-full"></div>
+                        <span id="stoneCount" class="font-bold">0</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 bg-yellow-600 rounded-full"></div>
+                        <span id="soilCount" class="font-bold">0</span>
+                    </div>
+                    <!-- 게스트 모드 표시 -->
+                    <div id="guestModeIndicator" class="hidden flex items-center space-x-2 bg-purple-500/20 px-3 py-1 rounded-full">
+                        <svg class="w-4 h-4 text-purple-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="text-sm text-purple-300">게스트</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="createPlanetBtn" class="bg-gradient-to-r from-green-500 to-blue-500 px-4 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        행성 만들기
+                    </button>
+                    <button id="logoutBtn" class="bg-red-500 px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors">
+                        로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 게임 캔버스 -->
+        <canvas id="gameCanvas" class="absolute inset-0 w-full h-full"></canvas>
+
+        <!-- 행성 생성 모달 -->
+        <div id="planetModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div class="bg-gray-800 rounded-2xl p-8 text-center max-w-md w-full mx-4">
+                <h2 class="text-2xl font-bold mb-4">행성 생성!</h2>
+                <div id="planetPreview" class="w-32 h-32 mx-auto mb-6 rounded-full planet-glow"></div>
+                <p class="text-gray-300 mb-6">축하합니다! 당신만의 행성이 탄생했습니다!</p>
+                <button id="closePlanetModal" class="bg-blue-500 px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+                    확인
+                </button>
+            </div>
+        </div>
+
+        <!-- 자원 획득 알림 -->
+        <div id="resourceNotification" class="hidden fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg font-semibold z-50">
+            자원 획득!
+        </div>
+    </div>
+
+    <!-- 스크립트 로딩 상태 확인 -->
+    <script>
+        // Firebase 스크립트 로딩 확인
+        function checkFirebaseLoaded() {
+            return new Promise((resolve) => {
+                let attempts = 0;
+                const maxAttempts = 50; // 5초 대기
+                
+                const check = () => {
+                    attempts++;
+                    if (typeof firebase !== 'undefined') {
+                        resolve(true);
+                    } else if (attempts < maxAttempts) {
+                        setTimeout(check, 100);
+                    } else {
+                        console.warn('Firebase 로딩 실패, 데모 모드로 실행');
+                        resolve(false);
+                    }
+                };
+                
+                check();
+            });
+        }
+        
+        // 페이지 로딩 완료 후 게임 초기화
+        window.addEventListener('load', async () => {
+            try {
+                await checkFirebaseLoaded();
+                
+                // 로딩 화면 숨기기
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.classList.add('hidden');
+                }
+                
+                // 로그인 화면 표시
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) {
+                    loginScreen.classList.remove('hidden');
+                }
+                
+            } catch (error) {
+                console.error('초기화 오류:', error);
+                
+                // 오류가 발생해도 로딩 화면은 숨기고 로그인 화면 표시
+                const loadingScreen = document.getElementById('loadingScreen');
+                const loginScreen = document.getElementById('loginScreen');
+                
+                if (loadingScreen) loadingScreen.classList.add('hidden');
+                if (loginScreen) loginScreen.classList.remove('hidden');
+            }
+        });
+    </script>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
